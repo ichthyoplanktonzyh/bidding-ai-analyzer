@@ -1,0 +1,51 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+.env
+*.egg
+
+# Node.js / Next.js
+node_modules/
+.next/
+out/
+*.tsbuildinfo
+next-env.d.ts
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Project data
+data/
+*.jsonl
+*.xlsx
+*.xltx
+*.csv
+
+# Exceptions for tracked data samples
+!examples/*.jsonl
+!examples/*.xlsx
+
+# Environment & secrets
+.env
+.env.local
+.env.*.local
+
+# Docker
+.docker/
+
+# Test outputs
+test_output/

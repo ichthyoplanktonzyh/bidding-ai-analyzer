@@ -1,0 +1,34 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.backends._legacy:_Backend"
+
+[project]
+name = "bidding-ai-analyzer"
+version = "0.1.0"
+description = "高校AI招投标文件自动化采集与AI分析系统"
+readme = "../README.md"
+license = {text = "MIT"}
+requires-python = ">=3.10"
+dependencies = [
+    "fastapi>=0.100.0",
+    "uvicorn[standard]>=0.20.0",
+    "requests>=2.28.0",
+    "beautifulsoup4>=4.11.0",
+    "pandas>=2.0.0",
+    "openpyxl>=3.1.0",
+    "pydantic-settings>=2.0.0",
+    "python-multipart>=0.0.6",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0",
+    "httpx>=0.24.0",
+]
+
+[project.scripts]
+bidding-ai-analyzer = "bidding_ai_analyzer.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
