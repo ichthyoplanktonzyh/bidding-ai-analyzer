@@ -8,7 +8,8 @@ import type { Task } from '@/lib/types';
 const statusLabels: Record<string, string> = {
   pending: '等待中',
   spidering: '采集中',
-  analyzing: '分析中',
+  awaiting_decision: '等待决策',
+  analyzing: 'AI分析中',
   completed: '已完成',
   failed: '失败',
 };
@@ -16,6 +17,7 @@ const statusLabels: Record<string, string> = {
 const statusColors: Record<string, string> = {
   pending: 'bg-yellow-100 text-yellow-800',
   spidering: 'bg-blue-100 text-blue-800',
+  awaiting_decision: 'bg-orange-100 text-orange-800',
   analyzing: 'bg-purple-100 text-purple-800',
   completed: 'bg-green-100 text-green-800',
   failed: 'bg-red-100 text-red-800',

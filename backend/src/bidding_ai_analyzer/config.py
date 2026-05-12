@@ -16,6 +16,12 @@ DIFY_API_KEY = os.getenv("DIFY_API_KEY", "")
 DIFY_BASE_URL = os.getenv("DIFY_BASE_URL", "https://xjtuagent.59wanmei.com:5000")
 USE_DIFY = os.getenv("USE_DIFY", "false").lower() == "true"
 
+# Default filter keywords (user-editable, served as initial recommendation)
+DEFAULT_FILTER_KEYWORDS = [
+    "大学", "学院", "高职", "职业技术", "职业学院",
+    "师范", "理工", "经贸", "学校", "教育",
+]
+
 # Spider defaults
 DEFAULT_DELAY_RANGE = (3, 8)
 DEFAULT_MAX_PAGES = 100

@@ -1,16 +1,24 @@
 // ===== Task Types =====
 
-export type TaskStatus = 'pending' | 'spidering' | 'analyzing' | 'completed' | 'failed';
+export type TaskStatus =
+  | 'pending'
+  | 'spidering'
+  | 'awaiting_decision'
+  | 'analyzing'
+  | 'completed'
+  | 'failed';
 
 export interface Task {
   id: string;
   keyword: string;
   start_time: string | null;
   end_time: string | null;
+  filter_keywords: string[];
   status: TaskStatus;
   progress: number;
   total_items: number;
   analyzed_items: number;
+  spider_item_count: number;
   created_at: string;
   completed_at: string | null;
   error: string;
@@ -20,7 +28,60 @@ export interface TaskCreateRequest {
   keyword: string;
   start_time?: string;
   end_time?: string;
+  filter_keywords?: string[];
 }
+
+export interface StartAnalysisRequest {
+  selected_indices?: number[];
+}
+
+// ===== Spider Result Types =====
+
+export interface SpiderResult {
+  标题: string;
+  URL: string;
+  发布日期: string;
+  采购人: string;
+  代理机构?: string;
+  所在区域?: string;
+  来源?: string;
+}
+
+export interface SpiderResultsResponse {
+  task_id: string;
+  results: SpiderResult[];
+  total: number;
+}
+
+// ===== Filter Keywords Types =====
+
+export interface FilterKeywordsPreset {
+  id: string;
+  name: string;
+  keywords: string[];
+  created_at: string;
+}
+
+export interface FilterKeywordsRequest {
+  name: string;
+  keywords: string[];
+}
+
+// ===== WebSocket Event Types =====
+
+export interface WsStatusUpdate {
+  type: 'status_update';
+  task_id: string;
+  status: TaskStatus;
+  progress: number;
+  total_items: number;
+  analyzed_items: number;
+  spider_item_count: number;
+  error: string;
+  timestamp: number;
+}
+
+export type WsEvent = WsStatusUpdate | { type: 'pipeline_complete'; status: string } | { type: 'error'; message: string };
 
 // ===== Analysis Result Types =====
 
