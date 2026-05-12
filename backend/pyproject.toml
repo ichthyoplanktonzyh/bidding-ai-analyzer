@@ -1,13 +1,12 @@
 [build-system]
 requires = ["setuptools>=68.0", "wheel"]
-build-backend = "setuptools.backends._legacy:_Backend"
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "bidding-ai-analyzer"
 version = "0.1.0"
 description = "高校AI招投标文件自动化采集与AI分析系统"
-readme = "../README.md"
-license = {text = "MIT"}
+license = "MIT"
 requires-python = ">=3.10"
 dependencies = [
     "fastapi>=0.100.0",
