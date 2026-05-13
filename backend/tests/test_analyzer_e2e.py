@@ -12,12 +12,12 @@ import json
 import os
 import pytest
 from bidding_ai_analyzer.analyzer.engine import TenderAnalyzer
-from bidding_ai_analyzer.config import DEEPSEEK_API_KEY, DIFY_API_KEY, USE_DIFY
+from bidding_ai_analyzer.config import DEEPSEEK_API_KEY
 
 
 def has_api_key():
-    """Check if any API key is configured."""
-    return bool(DEEPSEEK_API_KEY or DIFY_API_KEY)
+    """Check if DeepSeek API key is configured."""
+    return bool(DEEPSEEK_API_KEY)
 
 
 TEST_URLS = [
@@ -89,7 +89,6 @@ class TestAnalyzerE2E:
             assert "data" in result
 
     @pytest.mark.skipif(not has_api_key(), reason="No API key configured")
-    @pytest.mark.skipif(USE_DIFY, reason="Test requires DeepSeek, but USE_DIFY is true")
     def test_json_parsing_from_llm_response(self, analyzer):
         """Test that the analyzer correctly parses JSON from LLM responses."""
         url = "http://example.com/test"

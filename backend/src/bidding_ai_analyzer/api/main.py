@@ -6,7 +6,10 @@ import time
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 
+from ..config import validate_config
 from .routes import tasks, results, export, keywords
+
+validate_config()
 
 app = FastAPI(
     title="Bidding AI Analyzer",

@@ -49,6 +49,7 @@ export interface SpiderResult {
 
 export interface SpiderResultsResponse {
   task_id: string;
+  status: TaskStatus;
   results: SpiderResult[];
   total: number;
 }

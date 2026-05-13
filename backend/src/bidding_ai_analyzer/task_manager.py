@@ -102,7 +102,7 @@ class TaskManager:
         try:
             # === Stage 1: Spider ===
             task.status = TaskStatus.SPIDERING
-            task.progress = 10
+            task.progress = 5
 
             filter_kw = task.filter_keywords if task.filter_keywords else ['大学', '学院']
 
@@ -116,7 +116,19 @@ class TaskManager:
             )
             strategy = CCGPSearchStrategy(config)
             spider = TenderSpider(strategy, config)
-            results = spider.run()
+
+            # Progress callback: fires after each page, updates task in real-time
+            def on_progress(current_page: int, total_items: int, new_items: int):
+                task.total_items = total_items
+                # Map page progress into 5-50% range (Stage 1 is half of the pipeline)
+                task.progress = min(50, 5 + int((current_page / config.max_pages) * 45))
+                # Stream partial results so frontend can show them during crawl
+                if new_items > 0:
+                    # Append newly crawled items to spider_results
+                    new_results = spider.results[-new_items:]
+                    task.spider_results.extend([r.to_dict() for r in new_results])
+
+            results = spider.run(progress_callback=on_progress)
 
             task.total_items = len(results)
             task.progress = 50

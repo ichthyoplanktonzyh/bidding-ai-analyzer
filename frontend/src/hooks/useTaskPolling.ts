@@ -6,6 +6,7 @@ import type { Task, WsEvent } from '@/lib/types';
 
 /**
  * Hook that monitors task status via WebSocket with polling fallback.
+ * Merges WebSocket partial updates with the last-known full task to avoid UI flicker.
  */
 export function useTaskPolling(
   taskId: string | null,
@@ -16,6 +17,7 @@ export function useTaskPolling(
   const wsRef = useRef<WebSocket | null>(null);
   const onUpdateRef = useRef(onUpdate);
   onUpdateRef.current = onUpdate;
+  const lastTaskRef = useRef<Task | null>(null);
 
   const stopPolling = useCallback(() => {
     if (timerRef.current) {
@@ -27,29 +29,40 @@ export function useTaskPolling(
   useEffect(() => {
     if (!taskId) return;
 
-    // Try WebSocket first
+    // Fetch full task first, then connect WebSocket
+    getTask(taskId).then((task) => {
+      lastTaskRef.current = task;
+      onUpdateRef.current(task);
+    }).catch(() => {});
+
     const ws = connectTaskWebSocket(taskId);
     wsRef.current = ws;
 
     ws.onmessage = (event) => {
       try {
         const data: WsEvent = JSON.parse(event.data);
-        if (data.type === 'status_update') {
-          onUpdateRef.current({
-            id: data.task_id,
-            keyword: '',
-            start_time: null,
-            end_time: null,
-            filter_keywords: [],
-            status: data.status,
-            progress: data.progress,
-            total_items: data.total_items,
-            analyzed_items: data.analyzed_items,
-            spider_item_count: data.spider_item_count,
-            created_at: '',
-            completed_at: null,
-            error: data.error || '',
-          });
+        if (data.type === 'status_update' && lastTaskRef.current) {
+          const prev = lastTaskRef.current;
+          // Only update if something actually changed
+          if (
+            prev.status !== data.status ||
+            prev.progress !== data.progress ||
+            prev.total_items !== data.total_items ||
+            prev.analyzed_items !== data.analyzed_items ||
+            prev.spider_item_count !== data.spider_item_count
+          ) {
+            const updated: Task = {
+              ...prev,
+              status: data.status,
+              progress: data.progress,
+              total_items: data.total_items,
+              analyzed_items: data.analyzed_items,
+              spider_item_count: data.spider_item_count,
+              error: data.error || prev.error,
+            };
+            lastTaskRef.current = updated;
+            onUpdateRef.current(updated);
+          }
         } else if (data.type === 'pipeline_complete') {
           stopPolling();
         }
@@ -59,14 +72,12 @@ export function useTaskPolling(
     };
 
     ws.onerror = () => {
-      // WebSocket failed, fallback to polling
       wsRef.current = null;
-
       const poll = async () => {
         try {
           const task = await getTask(taskId);
+          lastTaskRef.current = task;
           onUpdateRef.current(task);
-
           if (task.status === 'completed' || task.status === 'failed') {
             stopPolling();
           }
@@ -74,7 +85,6 @@ export function useTaskPolling(
           // Ignore polling errors
         }
       };
-
       poll();
       timerRef.current = setInterval(poll, interval);
     };

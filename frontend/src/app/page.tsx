@@ -33,7 +33,7 @@ export default function Home() {
         />
         <StatusCard
           title="AI引擎"
-          value="DeepSeek / Dify"
+          value="DeepSeek"
           status="online"
         />
       </div>

@@ -117,4 +117,13 @@ class CCGPSearchStrategy(BaseSearchStrategy):
     def has_more_pages(self, html: str, current_page: int) -> bool:
         soup = BeautifulSoup(html, 'html.parser')
         items = soup.select('ul.vT-srch-result-list-bid li')
-        return len(items) > 0
+        if len(items) == 0:
+            return False
+        # Check pagination: CCGP shows total result count, compute max pages
+        total_match = re.search(r'共\s*(\d+)\s*条', html)
+        if total_match:
+            total_results = int(total_match.group(1))
+            # CCGP shows 20 results per page
+            max_pages = (total_results + 19) // 20
+            return current_page < max_pages
+        return True

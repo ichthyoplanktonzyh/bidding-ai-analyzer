@@ -2,7 +2,6 @@
 
 import { useEffect, useState, use, useCallback } from 'react';
 import {
-  getTask,
   getTaskResults,
   getSpiderResults,
   startAnalysis,
@@ -45,32 +44,34 @@ export default function TaskDetailPage({
   const [selectedIndices, setSelectedIndices] = useState<Set<number>>(new Set());
   const [startingAnalysis, setStartingAnalysis] = useState(false);
 
-  // WebSocket-enabled polling
+  // WebSocket-enabled polling (includes initial fetch)
   useTaskPolling(id, useCallback((t: Task) => {
     setTask(t);
     setLoading(false);
   }, []));
 
-  // Fetch initial task data
+  // Load spider results when waiting for decision OR when spidering (show partial)
   useEffect(() => {
-    getTask(id)
-      .then((t) => {
-        setTask(t);
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
-  }, [id]);
+    if (task?.status === 'awaiting_decision' || task?.status === 'spidering') {
+      const interval = task.status === 'spidering' ? 2000 : 0;
 
-  // Load spider results when waiting for decision
-  useEffect(() => {
-    if (task?.status === 'awaiting_decision') {
-      getSpiderResults(id)
-        .then((data) => {
-          setSpiderResults(data.results);
-          // Select all by default
-          setSelectedIndices(new Set(data.results.map((_, i) => i)));
-        })
-        .catch(console.error);
+      const loadResults = () => {
+        getSpiderResults(id)
+          .then((data) => {
+            setSpiderResults(data.results);
+            if (task.status === 'awaiting_decision') {
+              // Only auto-select when transitioning to decision state
+              setSelectedIndices(new Set(data.results.map((_, i) => i)));
+            }
+          })
+          .catch(console.error);
+      };
+
+      loadResults();
+      if (interval > 0) {
+        const timer = setInterval(loadResults, interval);
+        return () => clearInterval(timer);
+      }
     }
   }, [task?.status, id]);
 
@@ -150,7 +151,7 @@ export default function TaskDetailPage({
           <InfoItem label="数据量" value={`${task.total_items} 条`} />
         </div>
 
-        {task.filter_keywords.length > 0 && (
+        {task.filter_keywords && task.filter_keywords.length > 0 && (
           <div className="mt-3 flex items-center gap-2">
             <span className="text-xs text-slate-500">过滤词:</span>
             <div className="flex flex-wrap gap-1">
@@ -184,6 +185,69 @@ export default function TaskDetailPage({
           <div className="mt-4 p-3 bg-red-50 text-red-700 rounded text-sm">{task.error}</div>
         )}
       </div>
+
+      {/* Stage: Spidering — Show real-time crawl progress and partial results */}
+      {task.status === 'spidering' && (
+        <div className="space-y-4">
+          {/* Live progress card */}
+          <div className="bg-white rounded-lg border p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="animate-spin w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full" />
+              <div>
+                <p className="font-medium text-slate-800">正在采集招投标数据...</p>
+                <p className="text-sm text-slate-500">
+                  已采集 {task.total_items} 条结果，进度 {task.progress}%
+                </p>
+              </div>
+            </div>
+            <div className="w-full bg-slate-200 rounded-full h-3">
+              <div
+                className="bg-blue-600 h-3 rounded-full transition-all duration-500"
+                style={{ width: `${task.progress}%` }}
+              />
+            </div>
+          </div>
+
+          {/* Partial results table */}
+          {spiderResults.length > 0 && (
+            <div className="bg-white rounded-lg border overflow-hidden">
+              <div className="px-4 py-3 border-b bg-blue-50">
+                <h3 className="font-medium text-slate-800">
+                  实时采集结果（已采集 {spiderResults.length} 条）
+                </h3>
+              </div>
+              <div className="overflow-x-auto max-h-96 overflow-y-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b bg-slate-50 sticky top-0">
+                      <th className="text-left px-3 py-2 text-xs font-medium text-slate-600">#</th>
+                      <th className="text-left px-3 py-2 text-xs font-medium text-slate-600">标题</th>
+                      <th className="text-left px-3 py-2 text-xs font-medium text-slate-600">采购人</th>
+                      <th className="text-left px-3 py-2 text-xs font-medium text-slate-600">发布日期</th>
+                      <th className="text-left px-3 py-2 text-xs font-medium text-slate-600">来源</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {spiderResults.map((item, idx) => (
+                      <tr key={idx} className="border-b last:border-0">
+                        <td className="px-3 py-2 text-xs text-slate-400">{idx + 1}</td>
+                        <td className="px-3 py-2 text-sm max-w-md truncate" title={item.标题}>
+                          <a href={item.URL} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                            {item.标题 || '-'}
+                          </a>
+                        </td>
+                        <td className="px-3 py-2 text-sm text-slate-600">{item.采购人 || '-'}</td>
+                        <td className="px-3 py-2 text-sm text-slate-500">{item.发布日期 || '-'}</td>
+                        <td className="px-3 py-2 text-sm text-slate-500">{item.来源 || '-'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Stage: Awaiting Decision — Show spider results with checkboxes */}
       {task.status === 'awaiting_decision' && (

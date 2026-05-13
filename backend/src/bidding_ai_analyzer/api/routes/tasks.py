@@ -42,12 +42,14 @@ def get_task(task_id: str):
 
 @router.get("/{task_id}/spider-results")
 def get_spider_results(task_id: str):
-    """Get Stage 1 spider results for display and user selection."""
+    """Get Stage 1 spider results for display and user selection.
+    Returns partial results during spidering, full results after completion."""
     task = task_manager.get_task(task_id)
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
     return {
         "task_id": task_id,
+        "status": task.status.value,
         "results": task.spider_results,
         "total": len(task.spider_results),
     }

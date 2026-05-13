@@ -192,12 +192,19 @@ class TenderSpider:
         text_to_check = (item.title + item.purchaser).lower()
         return any(kw.lower() in text_to_check for kw in self.config.filter_keywords)
 
-    def run(self, start_page: int = 1) -> List[TenderItem]:
-        """Run the spider, collecting results from all pages."""
+    def run(self, start_page: int = 1, progress_callback=None) -> List[TenderItem]:
+        """Run the spider, collecting results from all pages.
+
+        Args:
+            start_page: Page to start crawling from.
+            progress_callback: Optional callable(current_page, total_items, new_items).
+        """
         print(f"Starting spider: keyword='{self.config.keyword}'")
         print(f"Filter keywords: {self.config.filter_keywords}")
         print(f"Page range: {start_page} - {self.config.max_pages}")
         print("-" * 50)
+
+        consecutive_empty = 0  # Track pages with 0 new items
 
         for page in range(start_page, self.config.max_pages + 1):
             print(f"[{time.strftime('%H:%M:%S')}] Requesting page {page}...", end=' ')
@@ -213,9 +220,23 @@ class TenderSpider:
 
             new_count = self.parse_and_filter(html, page)
 
+            # Report progress after each page
+            if progress_callback:
+                progress_callback(page, len(self.results), new_count)
+
+            # Stop if strategy says no more pages
             if not self.strategy.has_more_pages(html, page):
-                print("\nLast page reached")
+                print("\nLast page reached (strategy)")
                 break
+
+            # Auto-stop: 2 consecutive pages with 0 new items = no more data
+            if new_count == 0:
+                consecutive_empty += 1
+                if consecutive_empty >= 2:
+                    print(f"\nNo new results for {consecutive_empty} pages, stopping early at page {page}")
+                    break
+            else:
+                consecutive_empty = 0
 
             print(f"Got {new_count} new items, total {len(self.results)}")
 

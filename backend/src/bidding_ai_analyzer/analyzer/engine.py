@@ -16,9 +16,6 @@ from ..config import (
     DEEPSEEK_API_KEY,
     DEEPSEEK_BASE_URL,
     MODEL_NAME,
-    DIFY_API_KEY,
-    DIFY_BASE_URL,
-    USE_DIFY,
     MAX_CONTENT_LENGTH,
 )
 
@@ -87,57 +84,8 @@ class TenderAnalyzer:
             return f"[Fetch failed] {str(e)}"
 
     def analyze_tender(self, url: str, content: str) -> Dict:
-        """Call LLM API to analyze a single tender document."""
-        if USE_DIFY and DIFY_API_KEY:
-            return self._analyze_via_dify(url, content)
-        else:
-            return self._analyze_via_deepseek(url, content)
-
-    def _analyze_via_dify(self, url: str, content: str) -> Dict:
-        """Analyze via Dify workflow API."""
-        headers = {
-            "Authorization": f"Bearer {DIFY_API_KEY}",
-            "Content-Type": "application/json"
-        }
-
-        payload = {
-            "inputs": {
-                "dadata": f"【招投标文件原文】:\n{content}\n\n【招标公告链接】: {url}"
-            },
-            "response_mode": "blocking",
-            "user": "tender_analyzer"
-        }
-
-        try:
-            response = requests.post(
-                f"{DIFY_BASE_URL}/v1/workflows/run",
-                headers=headers,
-                json=payload,
-                timeout=120
-            )
-
-            if response.status_code == 200:
-                result = response.json()
-                if "data" in result and "outputs" in result.get("data", {}):
-                    outputs = result["data"]["outputs"]
-                    if "result" in outputs:
-                        content_result = outputs["result"]
-                    elif "text" in outputs:
-                        content_result = outputs["text"]
-                    else:
-                        content_result = str(outputs)
-
-                    if isinstance(content_result, dict):
-                        return {"success": True, "data": content_result}
-                    json_match = re.search(r'\{[\s\S]*\}', content_result)
-                    if json_match:
-                        parsed = json.loads(json_match.group())
-                        return {"success": True, "data": parsed}
-                return {"success": False, "error": "Dify response format error", "raw": result}
-            else:
-                return {"success": False, "error": f"API error: {response.status_code}", "detail": response.text}
-        except Exception as e:
-            return {"success": False, "error": str(e)}
+        """Call DeepSeek API to analyze a single tender document."""
+        return self._analyze_via_deepseek(url, content)
 
     def _analyze_via_deepseek(self, url: str, content: str) -> Dict:
         """Analyze via DeepSeek API directly."""
