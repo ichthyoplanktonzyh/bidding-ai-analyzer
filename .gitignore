@@ -29,7 +29,8 @@ next-env.d.ts
 Thumbs.db
 
 # Project data
-data/
+data/**
+!data/**/.gitkeep
 *.jsonl
 *.xlsx
 *.xltx
